@@ -129,8 +129,9 @@ post '/game/new' do
   if !key
     status 401
   else
-    if key_transform(key)
-      u = User.get(key_transform(key))
+    maybe_user = User.from_apikey(params[:key])
+    if maybe_user
+      u = maybe_user
       $log.debug u
       if !u
         status 401
@@ -138,7 +139,8 @@ post '/game/new' do
         title = params[:title]
         tagline = params[:tagline]
         description = params[:description]
-        game = u.games.new(title: title, tagline: tagline, description: description)
+        category = params[:category]
+        game = u.games.new(title: title, tagline: tagline, description: description, category: category)
         if game.save
           status 201
           json :id => game.id, :title => game.title
@@ -234,16 +236,24 @@ post '/comment/new' do
   rating = params[:rating]
   contents = params[:contents]
 
-  if game_id && contents && Game.get(game_id)
-    game = Game.get(game_id)
-    c = game.comments.new(rating: rating, contents: contents)
-    if c.save
-      status 200
+  maybe_user = User.from_apikey(params[:key])
+  if maybe_user
+    user = maybe_user
+    if game_id && contents && Game.get(game_id)
+      game = Game.get(game_id)
+      c = game.comments.new(rating: rating, contents: contents)
+      c.user = user
+      if c.save
+        status 201
+        json c.public_object
+      else
+        status 400
+      end
     else
       status 400
     end
   else
-    status 400
+    status 403
   end
 end
 

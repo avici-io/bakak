@@ -18,8 +18,12 @@ describe "The Avici.io Backend" do
 
   it "can be registered with a lot of valid users" do
     property_of {
-      [string(:alnum), string, string(:alnum), string(:alnum), string(:alnum)]
-    }.check {|a|
+      [
+          string(:alnum), string, string(:alnum), string(:alnum), string(:alnum),
+          {title: string(:alnum), tagline: string(:alnum), description: string(:alnum), category: range(1,8)}
+      ]
+    }.check(30) {|a|
+      game_params = a[5]
       post "/user/new", "username" => a[0], "password" => a[1], "email" => "#{a[2]}@#{a[3]}.#{a[4]}"
       expect(last_response.status).to be(201)
 
@@ -37,15 +41,62 @@ describe "The Avici.io Backend" do
 
       get "/user/#{id}"
       expect(JSON.parse(last_response.body)["username"]).to eq(a[0])
+
+
+      game_params[:key] = k
+      post "/game/new", game_params
+      expect(last_response.status).to be(201)
+      game_id = JSON.parse(last_response.body)["id"]
+
+      post "/comment/new", "game" => game_id, "contents" => a[2], "key" => k
+      expect(last_response.status).to be(201)
+      comment_id = JSON.parse(last_response.body)["id"]
+
+      get "/comment/#{comment_id}"
+      expect(last_response.status).to be(200)
+      expect(JSON.parse(last_response.body)["contents"]).to eq(a[2])
+
+      patch "/user/#{id}", "key" => k
+      expect(last_response.status).to be(200)
+
+      patch "/user/#{id}", "key" => k, "email" => "#{a[2]}@#{a[4]}.#{a[3]}"
+      expect(last_response.status).to be(200)
+
+      get "/user/#{id}"
+      expect(last_response.status).to be(200)
+      expect(JSON.parse(last_response.body)["email"]).to eq("#{a[2]}@#{a[4]}.#{a[3]}")
+
+      patch "/game/#{game_id}"
+      expect(last_response.status).to be(403)
+
+      patch "/game/#{game_id}", "key" => k
+      expect(last_response.status).to be(200)
+
+      patch "/game/#{game_id}", "key" => k, "tagline" => a[0]
+      expect(last_response.status).to be(200)
+
+      get "/game/#{game_id}"
+      expect(JSON.parse(last_response.body)["tagline"]).to eq(a[0])
     }
   end
 
   it "registered users should exist" do
     property_of {
-      range(1, 100)
+      range(1, 30)
     }.check {|i|
       get "/user/#{i}"
+      # puts last_response.errors
       expect(last_response.status).to be(200)
+      obj = JSON.parse(last_response.body)
+      $log.debug "PPPPPPP"
+      $log.debug obj
+      expect(obj["games"]).to be_an_instance_of(Array)
+      expect(obj["games"].length).to be >= 1
+      expect(obj["games"].first["id"]).to be > 0
+      expect(obj["games"].first["comments"]).to be_an_instance_of(Array)
+      expect(obj["games"].first["comments"].first["id"]).not_to eq(nil)
+      expect(obj["games"].first["comments"].first["contents"]).not_to eq(nil)
+      expect(obj["games"].first["comments"].first["author"]["id"]).not_to eq(nil)
     }
   end
 end

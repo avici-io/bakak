@@ -8,7 +8,7 @@ describe "The User Model" do
   it "users shall be able to generate keys" do
     property_of{
       [string(:alnum), string(:alnum), string(:alnum), range(1000,8000)]
-    }.check {|a|
+    }.check(20) {|a|
       g_username = a[0]
       g_password = a[1]
       g_email = "lalala@meow#{a[2]}.com"

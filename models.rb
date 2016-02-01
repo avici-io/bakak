@@ -60,8 +60,6 @@ def User.from_apikey(key)
   end
   begin
     h = Encryption.decrypt_hash(key)
-    $log.debug "YOLO"
-    $log.debug h
     expire_time = Time.at(h[:expires])
     if Time.now > expire_time
       $log.debug "Expired"
@@ -80,7 +78,7 @@ class Game
   include DataMapper::Resource
 
   belongs_to :user
-  has n, :comment
+  has n, :comments
 
   property :created_at, DateTime
   property :id, Serial
