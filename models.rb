@@ -3,11 +3,11 @@ require "bcrypt"
 require "json"
 require 'dm-migrations'
 require "openssl"
-require "qiniu"
+
 require "base64"
 require_relative "encrypt"
 
-Qiniu.establish_connection! access_key: CONFIG[:qiniu][:ak], secret_key: CONFIG[:qiniu][:sk]
+
 
 module NilableGet
   def nget(n)
@@ -29,7 +29,7 @@ class User
   property :created_at, DateTime
   property :id, Serial
 
-  property :username, String, :length => 2..40, :required => true, :unique => true
+  property :username, String, :length => 2..40, :required => true, :unique => true, :format => /[A-Za-z0-9_\-]*/
   property :password, BCryptHash
   property :email, String, :required => true, :unique => true, :format => :email_address
   property :description, Text, :length => 0..400
@@ -50,8 +50,6 @@ class User
     Encryption.encrypt_hash(obj)
   end
 end
-
-
 
 def User.from_apikey(key)
   if key.nil?
@@ -83,14 +81,35 @@ class Game
   property :created_at, DateTime
   property :id, Serial
 
-  property :title, String, :length => 2..60, :required => true, :unique => true
+  property :title, String, :length => 2..60
   property :tagline, String, :length => 2..100, :required => true
   property :description, Text, :length => 0..400, :default => lambda {|r,p| ""}
   property :category, Integer, :required => true
+  property :public, Boolean, :default => lambda {|r, p| false}
+
+  property :checksums, Text, :default => lambda {|r, p| "{}"}
+
+  property :html, Text, :default => lambda {|r, p| ""}
 
   def get_file_uptoken
-    policy = Qiniu::Auth::PutPolicy.new("avicidev")
-    return Qiniu::Auth.generate_uptoken(policy)
+    generate_token
+  end
+
+  def rating
+    rats = self.comments.map{|it| it.rating}.compact
+    if rats.length == 0
+      return 0
+    else
+      return rats.inject(:+).to_f / rats.length
+    end
+  end
+
+  def generate_token(path = nil)
+    if path
+      Qiniu::Auth.generate_uptoken(Qiniu::Auth::PutPolicy.new("avicidev", path))
+    else
+      Qiniu::Auth.generate_uptoken(Qiniu::Auth::PutPolicy.new("avicidev"))
+    end
   end
 
   def public_object
@@ -105,8 +124,22 @@ class Game
         email: self.user.email
       },
       category: self.category,
-      comments: self.comments.map{|it| it.public_object}
+      comments: self.comments.map{|it| it.public_object},
+      checksums: JSON.parse(self.checksums),
+      html: self.html,
+      rating: self.rating,
+      tokens: {
+          resources: generate_token,
+          small: generate_token("#{self.id}/small"),
+          large: generate_token("#{self.id}/large"),
+          marquee: generate_token("#{self.id}/marquee")
+      }
     }
+  end
+
+  # helper method for testing
+  def set_checksums_by_ruby_hash(ruby_hash)
+    self.update checksums: JSON.dump(ruby_hash)
   end
 end
 

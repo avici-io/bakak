@@ -5,6 +5,26 @@ require "sinatra"
 require "sinatra/reloader" if development?
 require "sinatra/json"
 require "data_mapper"
+require_relative "qiniu_patch"
+
+require 'sinatra/cross_origin'
+
+
+options "*" do
+  response.headers["Allow"] = "HEAD,GET,PUT,POST,DELETE,OPTIONS"
+  response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS, DELETE, PATCH, PUT"
+  response.headers["Access-Control-Allow-Headers"] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Cache-Control, Accept"
+  200
+end
+
+configure do
+  enable :cross_origin
+end
+
+Qiniu.establish_connection! access_key: CONFIG[:qiniu][:ak], secret_key: CONFIG[:qiniu][:sk]
+
+require_relative "path_resolver"
+require_relative "qiniu_patch"
 
 require "pry"
 
@@ -57,9 +77,6 @@ post '/user/new' do
     status 201
     json :id => post.id
   else
-    post.errors.each do |e|
-      $log.debug e
-    end
     status 400
   end
 end
@@ -115,7 +132,7 @@ post '/auth/me' do
     $log.debug maybe_user
     if maybe_user
       status 200
-      json :id => maybe_user.id
+      json maybe_user.public_object
     else
       status 404
     end
@@ -140,10 +157,11 @@ post '/game/new' do
         tagline = params[:tagline]
         description = params[:description]
         category = params[:category]
-        game = u.games.new(title: title, tagline: tagline, description: description, category: category)
+		public = params[:category] == "true" ? true : false
+        game = u.games.new(title: title, tagline: tagline, description: description, category: category, public: public)
         if game.save
           status 201
-          json :id => game.id, :title => game.title
+          json game.public_object
         else
           game.errors.each do |e|
             puts e
@@ -175,7 +193,7 @@ end
 
 # Modify Game Info
 patch '/game/:id' do
-  maybe_user = User.from_apikey(params[:key])
+  maybe_user = User. from_apikey(params[:key])
   if maybe_user
     user = maybe_user
     maybe_game = Game.nget(params[:id])
@@ -183,11 +201,14 @@ patch '/game/:id' do
       game = maybe_game
       if game.user == user
         info = {
+			title: params[:title],
             tagline: params[:tagline],
             description: params[:description],
-            category: params[:category]
+            category: params[:category],
+            checksums: params[:checksums],
+            html: params[:html],
+			public: params[:public] == nil ? nil : (params[:public] == "true" ? true : false)
         }
-
         if game.update(info.select{|k, v| !v.nil?})
           status 200
           json game.public_object
@@ -235,19 +256,23 @@ post '/comment/new' do
   game_id = params[:game]
   rating = params[:rating]
   contents = params[:contents]
-
   maybe_user = User.from_apikey(params[:key])
   if maybe_user
     user = maybe_user
-    if game_id && contents && Game.get(game_id)
+    if game_id && contents && Game.get(game_id) && (rating.nil? || (rating.to_i > 0 && rating.to_i <= 5))
+      rating = rating.to_i
       game = Game.get(game_id)
-      c = game.comments.new(rating: rating, contents: contents)
-      c.user = user
-      if c.save
-        status 201
-        json c.public_object
+      if game.comments.select{|it| it.rating}.map{|it| it.user.id}.include?(user.id) || game.user.id == user.id
+        status 409
       else
-        status 400
+        c = game.comments.new(rating: rating, contents: contents)
+        c.user = user
+        if c.save
+          status 201
+          json c.public_object
+        else
+          status 400
+        end
       end
     else
       status 400
@@ -294,5 +319,34 @@ delete '/comment/:id' do
     end
   else
     status 403
+  end
+end
+
+$path_resolver = PathResolver.new
+get '/files/:game_id/*.*' do
+  maybe_game_id = params[:game_id]
+  if maybe_game_id.to_i > 0
+    game_id = maybe_game_id.to_i
+    url = params['splat'].join(".")
+    base_path = CONFIG[:qiniu][:basepath]
+    r = $path_resolver.resolve(game_id, url)
+    if r
+      redirect base_path + r
+    else
+      status 404
+    end
+  else
+    status 404
+  end
+end
+
+get '/qiniu/ls' do
+  r = Qiniu.list_prefix 'avicidev', '', nil, 999
+  if r[0] == 200
+    status 200
+    json r[1]["items"].map{|it| it["key"]}
+  else
+    status 500
+    json r[1]
   end
 end

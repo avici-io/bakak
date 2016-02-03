@@ -1,6 +1,8 @@
 require "rspec"
 require "json"
 require_relative "../models"
+require_relative "../qiniu_patch"
+Qiniu.establish_connection! access_key: CONFIG[:qiniu][:ak], secret_key: CONFIG[:qiniu][:sk]
 
 $log = Logger.new(STDOUT)
 
