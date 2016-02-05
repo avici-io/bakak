@@ -49,6 +49,11 @@ class User
     obj = {id: id, expires: terminal_time}
     Encryption.encrypt_hash(obj)
   end
+
+  def generate_resetkey
+    obj = {id: id, from: Time.now.to_i}
+    Encryption.encrypt_hash obj
+  end
 end
 
 def User.from_apikey(key)
@@ -66,7 +71,17 @@ def User.from_apikey(key)
       return User.get(h[:id])
     end
   rescue Exception => exc
+	$log.debug "Key: #{key}"
     $log.debug "When Deciphering ApiKey, got #{exc.backtrace}"
+    return nil
+  end
+end
+
+def User.from_resetkey key
+  begin
+    h = Encryption.decrypt_hash(key)
+    return User.get(h[:id])
+  rescue Exception => exc
     return nil
   end
 end
@@ -77,6 +92,7 @@ class Game
 
   belongs_to :user
   has n, :comments
+  has n, :screenshots
 
   property :created_at, DateTime
   property :id, Serial
@@ -128,6 +144,7 @@ class Game
       checksums: JSON.parse(self.checksums),
       html: self.html,
       rating: self.rating,
+      screenshots: self.screenshots.map{|it| it.public_object},
       tokens: {
           resources: generate_token,
           small: generate_token("#{self.id}/small"),
@@ -140,6 +157,34 @@ class Game
   # helper method for testing
   def set_checksums_by_ruby_hash(ruby_hash)
     self.update checksums: JSON.dump(ruby_hash)
+  end
+end
+
+class Screenshot
+  extend NilableGet
+  include DataMapper::Resource
+
+  belongs_to :game
+
+  property :created_at, DateTime
+  property :id, Serial
+
+  property :sha, String
+
+  def public_object
+    {
+        id: self.id,
+        uploadkey: Qiniu::Auth.generate_uptoken(Qiniu::Auth::PutPolicy.new("avicidev", qiniu_path))
+    }
+  end
+
+  def qiniu_path
+    "/screenshots/#{id}"
+  end
+
+  def destroy
+    # TODO: Qiniu Delete
+    super
   end
 end
 

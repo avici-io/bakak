@@ -6,6 +6,7 @@ require "sinatra/reloader" if development?
 require "sinatra/json"
 require "data_mapper"
 require_relative "qiniu_patch"
+require_relative 'mailer'
 
 require 'sinatra/cross_origin'
 
@@ -46,7 +47,7 @@ post '/auth' do
   if u
     if u.password == password
       status 200
-      json :key => u.generate_apikey(3600)
+      json u.public_object.merge({:key => u.generate_apikey(3600)})
     else
       status 403
     end
@@ -124,6 +125,23 @@ patch '/user/:id' do
   end
 end
 
+post '/user/:id/reset' do
+  maybe_user = User.nget(params[:id])
+  email = params[:email]
+  if maybe_user
+    user = maybe_user
+    if user.email == email
+      reset_token = user.generate_password_reset_token
+      Emailer.mail_reset_password user.email, user.username, reset_token
+      status 200
+    else
+      status 403
+    end
+  else
+    status 404
+  end
+end
+
 post '/auth/me' do
   if !params[:key].nil?
     $log.debug params[:key]
@@ -132,9 +150,9 @@ post '/auth/me' do
     $log.debug maybe_user
     if maybe_user
       status 200
-      json maybe_user.public_object
+      json maybe_user.public_object.merge({:key => maybe_user.generate_apikey(3600)})
     else
-      status 404
+      status 403
     end
   else
     status 400
@@ -157,7 +175,7 @@ post '/game/new' do
         tagline = params[:tagline]
         description = params[:description]
         category = params[:category]
-		public = params[:category] == "true" ? true : false
+		    public = params[:category] == "true" ? true : false
         game = u.games.new(title: title, tagline: tagline, description: description, category: category, public: public)
         if game.save
           status 201
@@ -177,7 +195,7 @@ end
 
 # Get Game Info
 get '/game/:id' do
-  id = params[:id]
+  id = params[:id].to_i
   if id == 0
     status 401
   else
@@ -191,9 +209,26 @@ get '/game/:id' do
   end
 end
 
+get '/game/:id/html' do
+  maybe_game = Game.get(params[:id].to_i)
+  if maybe_game
+    game = maybe_game
+    response.headers["Content-Type"] = "text/html; charset=utf-8"
+    body = nil
+    if game.html && game.html != ""
+      body = "<p>No Game Yet</p>"
+    else
+      body = game.html
+    end
+    response.write body
+  else
+    status 404
+  end
+end
+
 # Modify Game Info
 patch '/game/:id' do
-  maybe_user = User. from_apikey(params[:key])
+  maybe_user = User.from_apikey(params[:key])
   if maybe_user
     user = maybe_user
     maybe_game = Game.nget(params[:id])
@@ -201,13 +236,13 @@ patch '/game/:id' do
       game = maybe_game
       if game.user == user
         info = {
-			title: params[:title],
+			      title: params[:title],
             tagline: params[:tagline],
             description: params[:description],
             category: params[:category],
             checksums: params[:checksums],
             html: params[:html],
-			public: params[:public] == nil ? nil : (params[:public] == "true" ? true : false)
+			      public: params[:public] == nil ? nil : (params[:public] == "true" ? true : false)
         }
         if game.update(info.select{|k, v| !v.nil?})
           status 200
@@ -322,6 +357,56 @@ delete '/comment/:id' do
   end
 end
 
+post '/screenshot' do
+
+end
+
+post '/screenshot/new' do
+  key = params[:key]
+  game_id = params[:game]
+  if key and game_id.to_i != 0
+    maybe_game = Game.nget game_id
+    maybe_user = User.from_apikey(key)
+    if maybe_game.nil?
+      status 404
+    elsif maybe_user.nil? or maybe_game.user.id != maybe_user.id
+      $log.debug [maybe_user.nil?, maybe_game.user.id != maybe_user]
+      status 403
+    else
+      status 201
+      game = maybe_game
+      user = maybe_user
+      s = game.screenshots.new
+      s.save
+      $log.debug game.public_object
+      json s.public_object
+    end
+  else
+    status 400
+  end
+end
+
+delete '/screenshot/:id' do
+  key = params[:key]
+  game_id = params[:game]
+  if key and game_id.to_i != 0
+    maybe_game = Game.nget game_id
+    maybe_user = User.from_apikey(key)
+    maybe_screenshot = Screenshot.nget(params[:id])
+    if maybe_game.nil? or maybe_screenshot.nil?
+      status 404
+    elsif maybe_user.nil? or maybe_game.user.id != maybe_user.id or maybe_screenshot.user.id != maybe_game.id
+      status 403
+    else
+      screenshot = maybe_screenshot
+      screenshot.destroy
+      status 200
+    end
+  else
+    status 400
+  end
+end
+
 $path_resolver = PathResolver.new
 get '/files/:game_id/*.*' do
   maybe_game_id = params[:game_id]
@@ -350,3 +435,5 @@ get '/qiniu/ls' do
     json r[1]
   end
 end
+
+

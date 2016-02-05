@@ -1,10 +1,22 @@
 require "rspec"
 require "json"
+require "data_mapper"
+require_relative "../config"
+require "logger"
+
+require 'rantly'
+require 'rantly/rspec_extensions'    # for RSpec
+
+DataMapper::Logger.new($stdout, :debug)
+DataMapper.setup(:default, 'sqlite:///project.db')
+
 require_relative "../models"
 require_relative "../qiniu_patch"
 Qiniu.establish_connection! access_key: CONFIG[:qiniu][:ak], secret_key: CONFIG[:qiniu][:sk]
 
 $log = Logger.new(STDOUT)
+
+
 
 describe "The User Model" do
   it "users shall be able to generate keys" do
@@ -19,6 +31,7 @@ describe "The User Model" do
       u.save!
 
       expect(u.id).to eq(User.from_apikey(u.generate_apikey(g_duration)).id)
+      expect(u.id).to eq(User.from_resetkey(u.generate_resetkey).id)
     }
   end
 end
