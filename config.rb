@@ -12,6 +12,3 @@ CONFIG = {
       db: ENV["REDIS_DB"].to_i
   }
 }
-
-
-puts CONFIG
