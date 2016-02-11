@@ -68,15 +68,16 @@ post '/user/new' do
   password = params[:password]
   email = params[:email]
 
-  post = User.new(
-    :username => username,
-    :password => password,
-    :email => email
+  user = User.new(
+      :username => username,
+      :password => password,
+      :email => email
   )
 
-  if post.save
+  if user.save
     status 201
-    json :id => post.id
+    user.games.create :title => "Untitled Game", :tagline => "Tagtagtag", :description => "Hihihi", :category => 0
+    json :id => user.id
   else
     status 400
   end
@@ -100,16 +101,19 @@ end
 
 # Modify User
 patch '/user/:id' do
+
   maybe_user = User.nget(params[:id])
   current_user = User.from_apikey(params[:key])
+  p current_user.nil?
   if maybe_user
     user = maybe_user
     if current_user
       if current_user.id == user.id
         info = {
-            email: params[:email]
+            email: params[:email],
+            description: params[:description]
         }
-        if user.update(info.select{|k, v| !v.nil?})
+        if user.update(info.select { |k, v| !v.nil? })
           status 200
         else
           status 400
@@ -175,7 +179,7 @@ post '/game/new' do
         tagline = params[:tagline]
         description = params[:description]
         category = params[:category]
-		    public = params[:category] == "true" ? true : false
+        public = params[:category] == "true" ? true : false
         game = u.games.new(title: title, tagline: tagline, description: description, category: category, public: public)
         if game.save
           status 201
@@ -214,6 +218,7 @@ get '/game/:id/html' do
   if maybe_game
     game = maybe_game
     response.headers["Content-Type"] = "text/html; charset=utf-8"
+    response.headers["X-Frame-Options"] = "true"
     body = nil
     if game.html && game.html != ""
       body = "<p>No Game Yet</p>"
@@ -236,15 +241,15 @@ patch '/game/:id' do
       game = maybe_game
       if game.user == user
         info = {
-			      title: params[:title],
+            title: params[:title],
             tagline: params[:tagline],
             description: params[:description],
             category: params[:category],
             checksums: params[:checksums],
             html: params[:html],
-			      public: params[:public] == nil ? nil : (params[:public] == "true" ? true : false)
+            public: params[:public] == nil ? nil : (params[:public] == "true" ? true : false)
         }
-        if game.update(info.select{|k, v| !v.nil?})
+        if game.update(info.select { |k, v| !v.nil? })
           status 200
           json game.public_object
         else
@@ -297,7 +302,7 @@ post '/comment/new' do
     if game_id && contents && Game.get(game_id) && (rating.nil? || (rating.to_i > 0 && rating.to_i <= 5))
       rating = rating.to_i
       game = Game.get(game_id)
-      if game.comments.select{|it| it.rating}.map{|it| it.user.id}.include?(user.id) || game.user.id == user.id
+      if game.comments.select { |it| it.rating }.map { |it| it.user.id }.include?(user.id) || game.user.id == user.id
         status 409
       else
         c = game.comments.new(rating: rating, contents: contents)
@@ -395,7 +400,7 @@ delete '/screenshot/:id' do
     maybe_screenshot = Screenshot.nget(params[:id])
     if maybe_game.nil? or maybe_screenshot.nil?
       status 404
-    elsif maybe_user.nil? or maybe_game.user.id != maybe_user.id or maybe_screenshot.user.id != maybe_game.id
+    elsif maybe_user.nil? or maybe_game.user.id != maybe_user.id or maybe_screenshot.game.id != maybe_game.id
       status 403
     else
       screenshot = maybe_screenshot
@@ -429,7 +434,7 @@ get '/qiniu/ls' do
   r = Qiniu.list_prefix 'avicidev', '', nil, 999
   if r[0] == 200
     status 200
-    json r[1]["items"].map{|it| it["key"]}
+    json r[1]["items"].map { |it| it["key"] }
   else
     status 500
     json r[1]
