@@ -14,5 +14,5 @@ case env
     DataMapper.setup(:default, 'sqlite://./project.db')
   when "ci"
     DataMapper::Logger.new($stdout, :debug)
-    DataMapper.setup(:default, 'postgres://ubuntu:@127.0.0.1:5432/circle_test')
+    DataMapper.setup(:default, 'sqlite::memory:')
 end
