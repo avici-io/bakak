@@ -57,8 +57,12 @@ GEM
       dm-core (~> 1.2.0)
     do_sqlite3 (0.10.17-x86-mingw32)
       data_objects (= 0.10.17)
+    domain_name (0.5.20160128)
+      unf (>= 0.0.5, < 1.0.0)
     fastercsv (1.5.5)
     ffi (1.9.10-x86-mingw32)
+    http-cookie (1.0.2)
+      domain_name (~> 0.5)
     json (1.8.3)
     json_pure (1.8.3)
     mailgun-ruby (1.0.3)
@@ -88,19 +92,19 @@ GEM
       ffi (~> 1.9)
       mime-types (>= 1.16, < 3.0)
       netrc (~> 0.7)
-    rspec (3.3.0)
-      rspec-core (~> 3.3.0)
-      rspec-expectations (~> 3.3.0)
-      rspec-mocks (~> 3.3.0)
-    rspec-core (3.3.2)
-      rspec-support (~> 3.3.0)
-    rspec-expectations (3.3.1)
+    rspec (3.4.0)
+      rspec-core (~> 3.4.0)
+      rspec-expectations (~> 3.4.0)
+      rspec-mocks (~> 3.4.0)
+    rspec-core (3.4.2)
+      rspec-support (~> 3.4.0)
+    rspec-expectations (3.4.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.3.0)
-    rspec-mocks (3.3.2)
+      rspec-support (~> 3.4.0)
+    rspec-mocks (3.4.1)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.3.0)
-    rspec-support (3.3.0)
+      rspec-support (~> 3.4.0)
+    rspec-support (3.4.1)
     ruby-hmac (0.4.0)
     sinatra (1.4.7)
       rack (~> 1.5)
@@ -117,6 +121,9 @@ GEM
     slop (3.6.0)
     stringex (1.5.1)
     tilt (2.0.2)
+    unf (0.1.4)
+      unf_ext
+    unf_ext (0.0.7.2-x86-mingw32)
     uuidtools (2.1.5)
 
 PLATFORMS
@@ -132,10 +139,10 @@ DEPENDENCIES
   rantly
   redis
   rspec
-  rspec-core
-  rspec-expectations
+  rspec-core (~> 3.4.2)
+  rspec-expectations (~> 3.4.0)
   rspec-mocks
-  sinatra
+  sinatra (~> 1.4.7)
   sinatra-contrib
   sinatra-cross_origin
 

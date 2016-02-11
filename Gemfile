@@ -1,12 +1,12 @@
 source 'http://rubygems.org'
 
 
-gem 'rspec-core'
-gem 'rspec-expectations'
+gem 'rspec-core', '~>3.4.2'
+gem 'rspec-expectations', '~>3.4.0'
 gem 'rspec-mocks'
 gem 'rspec'
 gem 'rantly'
-gem 'sinatra'
+gem 'sinatra', '~>1.4.7'
 gem 'redis'
 gem 'pry'
 gem 'dm-sqlite-adapter'
