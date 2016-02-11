@@ -1,6 +1,15 @@
 source 'http://rubygems.org'
 
+
+gem 'rspec-core'
+gem 'rspec-expectations'
+gem 'rspec-mocks'
+gem 'rspec'
+gem 'rantly'
 gem 'sinatra'
+gem 'redis'
+gem 'pry'
+gem 'dm-sqlite-adapter'
 gem 'sinatra-contrib'
 gem 'sinatra-cross_origin'
 gem 'contracts'
