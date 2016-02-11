@@ -215,5 +215,5 @@ class Comment
   end
 end
 
-DataMapper.auto_migrate!
-DataMapper.finalize
+load 'database_setup.rb'
+DataMapper.finalize.auto_migrate!

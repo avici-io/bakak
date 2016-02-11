@@ -20,7 +20,7 @@ RSpec.describe PathResolver do
           },
           game_checksums: dict{[string(:alnum) + "/" + string(:alnum), string(:alnum)]}
       }
-    }.check{ |h|
+    }.check(10) { |h|
       user = h[:user]
       game_data = h[:game_data]
       game_checksums = h[:game_checksums]

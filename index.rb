@@ -29,7 +29,6 @@ require_relative "qiniu_patch"
 
 require "pry"
 
-require_relative "database_setup"
 
 require_relative "models"
 
