@@ -2,7 +2,7 @@ Bakak
 ==================
 
 [![Circle CI](https://circleci.com/gh/avici-io/bakak.svg?style=svg)](https://circleci.com/gh/avici-io/bakak)
-Avici.io's frontend is code-named "Bakak".
+Avici.io's backend is code-named "Bakak".
 
 ### Setup
 
@@ -21,7 +21,7 @@ QINIU_SK # Qiniu Secret Key
 QINIU_BASEPATH # Your Qiniu Hosted Url
 REDIS_HOST
 REDIS_PORT
-REDIS_DB # read redis docs for these three
+REDIS_DB # redis connection settings
 ```
 
 You also need to install ```bundler```.
