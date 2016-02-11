@@ -7,9 +7,6 @@ require "logger"
 require 'rantly'
 require 'rantly/rspec_extensions'    # for RSpec
 
-DataMapper::Logger.new($stdout, :debug)
-DataMapper.setup(:default, 'sqlite:///project.db')
-
 require_relative "../models"
 require_relative "../qiniu_patch"
 Qiniu.establish_connection! access_key: CONFIG[:qiniu][:ak], secret_key: CONFIG[:qiniu][:sk]
