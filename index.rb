@@ -29,8 +29,7 @@ require_relative "qiniu_patch"
 
 require "pry"
 
-DataMapper::Logger.new($stdout, :debug)
-DataMapper.setup(:default, 'sqlite://./project.db')
+require_relative "database_setup"
 
 require_relative "models"
 

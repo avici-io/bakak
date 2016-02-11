@@ -17,10 +17,7 @@
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 
-require "data_mapper"
-
-DataMapper::Logger.new($stdout, :debug)
-DataMapper.setup(:default, 'sqlite://./project.db')
+require_relative "../database_setup"
 
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
