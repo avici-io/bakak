@@ -15,9 +15,9 @@ gem 'redis'
 gem 'pry'
 gem 'pg'
 gem 'dm-timestamps'
-gem 'dm-sqlite-adapter'
+gem 'dm-sqlite-adapter' unless ENV['DEPLOY']
 gem 'dm-postgres-adapter'
-gem 'dm-mysql-adapter'
+gem 'dm-mysql-adapter' unless ENV['DEPLOY']
 gem 'sinatra-contrib'
 gem 'sinatra-cross_origin'
 gem 'contracts'
