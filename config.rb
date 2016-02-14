@@ -1,6 +1,7 @@
 #
 CONFIG = {
   :token_key => "Rb-5qB56khXJYYWNlak_9cPOBwYCopIDh-u8RTzOCJYJJdURF7PSZc8XkMsEY2hXS8Sz",
+  :mailgun => ENV["MAIGUN_KEY"],
   :qiniu => {
     ak: ENV["QINIU_AK"],
     sk: ENV["QINIU_SK"],

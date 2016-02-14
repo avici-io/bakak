@@ -3,7 +3,7 @@ require_relative 'config'
 require 'contracts'
 
 class Emailer
-  @mg_client = Mailgun::Client.new 'key-88367605e3fc4e98aeab39186b0aeb50'
+  @mg_client = Mailgun::Client.new CONFIG[:mailgun]
   class << self
     include Contracts::Core
     include Contracts::Builtin
@@ -11,7 +11,7 @@ class Emailer
     Contract String, String, String => Any
     def mail mail_address, subject, contents
       message_params = {
-          from: 'admin@avici.io',
+          from: 'noreply@avici.io',
           to: mail_address,
           subject: subject,
           contents: contents

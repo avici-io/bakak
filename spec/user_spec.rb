@@ -9,6 +9,8 @@ require 'rantly/rspec_extensions'    # for RSpec
 
 require_relative "../models"
 require_relative "../qiniu_patch"
+
+require_relative "../encrypt"
 Qiniu.establish_connection! access_key: CONFIG[:qiniu][:ak], secret_key: CONFIG[:qiniu][:sk]
 
 $log = Logger.new(STDOUT)
@@ -25,9 +27,12 @@ describe "The User Model" do
       g_email = "lalala@meow#{a[2]}.com"
       g_duration = a[3]
       u = User.new(username: g_username, password: g_password, email: g_email)
-      u.save!
+      expect(u.save).to eq(true)
 
-      expect(u.id).to eq(User.from_apikey(u.generate_apikey(g_duration)).id)
+      expect(u.id).to be_a(Fixnum)
+
+      generated_key = u.generate_apikey(g_duration)
+      expect(u.id).to eq(User.from_apikey(generated_key).id)
       expect(u.id).to eq(User.from_resetkey(u.generate_resetkey).id)
     }
   end

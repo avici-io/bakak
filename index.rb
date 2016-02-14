@@ -1,6 +1,7 @@
 require_relative "config"
 
 require "logger"
+require "thin"
 require "sinatra"
 require "sinatra/reloader" if development?
 require "sinatra/json"
@@ -38,6 +39,24 @@ get "/" do
   status 200
 end
 
+=begin
+@api {post} /auth
+@apiName Authenticate
+@apiGroup Authentication
+
+@apiParam {String} username Username of the User
+@apiParam {String} password Password of the User
+
+@apiSuccess {String} key Public Key of the User
+
+@apiSuccessExample Success-Response:
+  HTTP/1.1 200 OK
+  {
+    "key": "<user_key>"
+  }
+
+=end
+
 post '/auth' do
   username = params[:username]
   password = params[:password]
@@ -47,10 +66,10 @@ post '/auth' do
       status 200
       json u.public_object.merge({:key => u.generate_apikey(3600)})
     else
-      status 403
+      status 401
     end
   else
-    status 404
+    status 422
   end
 end
 
@@ -58,6 +77,23 @@ end
 post '/user' do
 
 end
+
+
+=begin
+@api {post} /user/new Create New User
+@apiName NewUser
+@apiGroup User
+
+@apiParam {String} username Username
+@apiParam {String} password Password
+@apiParam {String} email Email
+
+@apiSuccessExample Success-Response:
+  HTTP:/1.1 201 Created
+  {
+    "id": 2
+  }
+=end
 
 # Create a New User
 post '/user/new' do
@@ -78,6 +114,7 @@ post '/user/new' do
     json :id => user.id
   else
     status 400
+    json user.errors.full_messages
   end
 end
 
@@ -90,7 +127,7 @@ get '/user/:id' do
       status 200
       json u.public_object
     else
-      status 404
+      status 422
     end
   else
     status 400
@@ -99,28 +136,38 @@ end
 
 # Modify User
 patch '/user/:id' do
-
   maybe_user = User.nget(params[:id])
   current_user = User.from_apikey(params[:key])
-  p current_user.nil?
   if maybe_user
     user = maybe_user
     if current_user
       if current_user.id == user.id
+        p params[:description]
         info = {
             email: params[:email],
             description: params[:description]
         }
-        if user.update(info.select { |k, v| !v.nil? })
+
+        if User.from_resetkey(params[:reset_key]) == current_user
+          #
+        elsif User.password == params[:oldPassword]
+
+        else
+          info[:password] = nil
+        end
+        final_params = info.select { |k, v| !v.nil? }
+        p "FINAL PARAMS: #{final_params}"
+        if user.update(final_params)
           status 200
         else
           status 400
+          json user.errors.full_messages
         end
       else
         status 403
       end
     else
-      status 403
+      status 401
     end
   else
     status 404
@@ -154,7 +201,7 @@ post '/auth/me' do
       status 200
       json maybe_user.public_object.merge({:key => maybe_user.generate_apikey(3600)})
     else
-      status 403
+      status 401
     end
   else
     status 400
@@ -170,7 +217,7 @@ post '/game/new' do
     if maybe_user
       u = maybe_user
       $log.debug u
-      if !u
+      if (!u) or u.games.length >= u.game_limit
         status 401
       else
         title = params[:title]
@@ -183,14 +230,12 @@ post '/game/new' do
           status 201
           json game.public_object
         else
-          game.errors.each do |e|
-            puts e
-          end
           status 400
+          json user.errors.full_messages
         end
       end
     else
-      status 403
+      status 401
     end
   end
 end
@@ -199,14 +244,14 @@ end
 get '/game/:id' do
   id = params[:id].to_i
   if id == 0
-    status 401
+    status 400
   else
     status 200
     g = Game.get(id)
     if g
       json g.public_object
     else
-      status 404
+      status 422
     end
   end
 end
@@ -260,7 +305,7 @@ patch '/game/:id' do
       status 404
     end
   else
-    status 403
+    status 401
   end
 end
 
@@ -282,7 +327,7 @@ delete '/game/:id' do
       status 404
     end
   else
-    status 403
+    status 401
   end
 end
 
@@ -310,13 +355,14 @@ post '/comment/new' do
           json c.public_object
         else
           status 400
+          json user.errors.full_messages
         end
       end
     else
       status 400
     end
   else
-    status 403
+    status 401
   end
 end
 
@@ -356,7 +402,7 @@ delete '/comment/:id' do
       status 404
     end
   else
-    status 403
+    status 401
   end
 end
 
@@ -371,9 +417,8 @@ post '/screenshot/new' do
     maybe_game = Game.nget game_id
     maybe_user = User.from_apikey(key)
     if maybe_game.nil?
-      status 404
+      status 422
     elsif maybe_user.nil? or maybe_game.user.id != maybe_user.id
-      $log.debug [maybe_user.nil?, maybe_game.user.id != maybe_user]
       status 403
     else
       status 201
@@ -381,11 +426,10 @@ post '/screenshot/new' do
       user = maybe_user
       s = game.screenshots.new
       s.save
-      $log.debug game.public_object
       json s.public_object
     end
   else
-    status 400
+    status 401
   end
 end
 
@@ -397,16 +441,16 @@ delete '/screenshot/:id' do
     maybe_user = User.from_apikey(key)
     maybe_screenshot = Screenshot.nget(params[:id])
     if maybe_game.nil? or maybe_screenshot.nil?
-      status 404
+      status 422
     elsif maybe_user.nil? or maybe_game.user.id != maybe_user.id or maybe_screenshot.game.id != maybe_game.id
-      status 403
+      status 422
     else
       screenshot = maybe_screenshot
       screenshot.destroy
       status 200
     end
   else
-    status 400
+    status 401
   end
 end
 

@@ -6,8 +6,10 @@ GEM
     bcrypt (3.1.10-x86-mingw32)
     bcrypt-ruby (3.1.5-x86-mingw32)
       bcrypt (>= 3.1.3)
+    builder (3.2.2)
     coderay (1.1.0)
     contracts (0.13.0)
+    daemons (1.2.3)
     data_mapper (1.2.0)
       dm-aggregates (~> 1.2.0)
       dm-constraints (~> 1.2.0)
@@ -67,6 +69,7 @@ GEM
       data_objects (= 0.10.17)
     do_sqlite3 (0.10.17-x86-mingw32)
       data_objects (= 0.10.17)
+    eventmachine (1.0.8)
     fastercsv (1.5.5)
     ffi (1.9.10-x86-mingw32)
     json (1.8.3)
@@ -78,6 +81,7 @@ GEM
     mime-types (2.4.3)
     multi_json (1.11.2)
     netrc (0.11.0)
+    pg (0.17.1-x86-mingw32)
     pry (0.10.3)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
@@ -92,6 +96,7 @@ GEM
       rack
     rack-test (0.6.3)
       rack (>= 1.0)
+    rake (10.5.0)
     rantly (0.3.2)
     redis (3.2.2)
     rest-client (1.7.3-x86-mingw32)
@@ -111,6 +116,9 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.4.0)
     rspec-support (3.4.1)
+    rspec_junit_formatter (0.2.2)
+      builder (< 4)
+      rspec-core (>= 2, < 4, != 2.12.0)
     ruby-hmac (0.4.0)
     sinatra (1.4.7)
       rack (~> 1.5)
@@ -126,6 +134,10 @@ GEM
     sinatra-cross_origin (0.3.2)
     slop (3.6.0)
     stringex (1.5.1)
+    thin (1.6.4)
+      daemons (~> 1.0, >= 1.0.9)
+      eventmachine (~> 1.0, >= 1.0.4)
+      rack (~> 1.0)
     tilt (2.0.2)
     uuidtools (2.1.5)
 
@@ -138,18 +150,23 @@ DEPENDENCIES
   dm-mysql-adapter
   dm-postgres-adapter
   dm-sqlite-adapter
+  dm-timestamps
   mailgun-ruby
+  pg
   pry
   qiniu
+  rake
   rantly
   redis
   rspec
   rspec-core (~> 3.4.2)
   rspec-expectations (~> 3.4.0)
   rspec-mocks
+  rspec_junit_formatter (= 0.2.2)
   sinatra (~> 1.4.7)
   sinatra-contrib
   sinatra-cross_origin
+  thin
 
 BUNDLED WITH
    1.11.2

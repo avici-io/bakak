@@ -2,6 +2,7 @@ require "data_mapper"
 require "bcrypt"
 require "json"
 require 'dm-migrations'
+require 'dm-timestamps'
 require "openssl"
 
 require "base64"
@@ -26,8 +27,9 @@ class User
 
   has n, :games
 
-  property :created_at, DateTime
   property :id, Serial
+
+  timestamps :at
 
   property :username, String, :length => 2..40, :required => true, :unique => true, :format => /[A-Za-z0-9_\-]*/
   property :password, BCryptHash
@@ -40,19 +42,25 @@ class User
       username: self.username,
       email: self.email,
       description: self.description,
-      games: self.games.map{|it| it.public_object}
+      games: self.games.map{|it| it.public_object},
+      created_at: self.created_at,
+      updated_at: self.updated_at
     }
   end
 
   def generate_apikey(duration)
     terminal_time = Time.now.to_i + duration
-    obj = {id: id, expires: terminal_time}
+    obj = {id: self.id, expires: terminal_time}
     Encryption.encrypt_hash(obj)
   end
 
   def generate_resetkey
-    obj = {id: id, from: Time.now.to_i}
+    obj = {id: self.id, from: Time.now.to_i}
     Encryption.encrypt_hash obj
+  end
+
+  def game_limit
+    5
   end
 end
 
@@ -63,6 +71,7 @@ def User.from_apikey(key)
   end
   begin
     h = Encryption.decrypt_hash(key)
+    $log.debug "H: #{h}"
     expire_time = Time.at(h[:expires])
     if Time.now > expire_time
       $log.debug "Expired"
@@ -78,6 +87,7 @@ def User.from_apikey(key)
 end
 
 def User.from_resetkey key
+  return nil if key.nil?
   begin
     h = Encryption.decrypt_hash(key)
     return User.get(h[:id])
@@ -94,7 +104,7 @@ class Game
   has n, :comments
   has n, :screenshots
 
-  property :created_at, DateTime
+  timestamps :at
   property :id, Serial
 
   property :title, String, :length => 2..60
@@ -150,7 +160,9 @@ class Game
           small: generate_token("#{self.id}/small"),
           large: generate_token("#{self.id}/large"),
           marquee: generate_token("#{self.id}/marquee")
-      }
+      },
+      created_at: self.created_at,
+      updated_at: self.updated_at
     }
   end
 
@@ -165,6 +177,8 @@ class Screenshot
   include DataMapper::Resource
 
   belongs_to :game
+
+  timestamps :at
 
   property :created_at, DateTime
   property :id, Serial

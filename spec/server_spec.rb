@@ -19,7 +19,7 @@ describe "The Avici.io Backend" do
     expect(last_response).to be_ok
   end
 
-  it "can be registered with a lot of valid users" do
+  it "can be registered with a lot of users" do
     property_of {
       [
           string(:alnum), string(:alnum), string(:alnum), string(:alnum), string(:alnum),
@@ -88,7 +88,7 @@ describe "The Avici.io Backend" do
       expect(JSON.parse(last_response.body)["email"]).to eq("#{a[2]}@#{a[4]}.#{a[3]}")
 
       patch "/game/#{game_id}"
-      expect(last_response.status).to be(403)
+      expect(last_response.status).to be(401)
 
       patch "/game/#{game_id}", "key" => k
       expect(last_response.status).to be(200)
