@@ -10,6 +10,9 @@ class PathResolver
 
   def initialize
     @redis = Redis.new(CONFIG[:redis])
+    if CONFIG[:redis][:password]
+      @redis.auth CONFIG[:redis][:password]
+    end
     @redis.keys("*").each do |k|
       @redis.set(k, nil)
     end
