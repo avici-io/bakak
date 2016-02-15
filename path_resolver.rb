@@ -49,7 +49,11 @@ class PathResolver
     end
   end
 
-  Contract Num, String => String
+  def uncache game_id
+    @redis.del "game_#{game_id}"
+  end
+
+  Contract Num, String => Maybe[String]
   def get_from_redis game_id, url
     @redis.get("game_#{game_id}_#{url}")
   end

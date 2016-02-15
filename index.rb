@@ -256,17 +256,21 @@ get '/game/:id' do
   end
 end
 
-get '/game/:id/html' do
-  maybe_game = Game.get(params[:id].to_i)
+get '/game/:id/index.html' do
+
+  maybe_game = Game.nget(params[:id])
   if maybe_game
     game = maybe_game
-    response.headers["Content-Type"] = "text/html; charset=utf-8"
+    1.times do
+      p JSON.load(game.checksums)
+    end
+    response.headers["Content-Type"] = "text/html;charset=utf-8"
     response.headers["X-Frame-Options"] = "true"
     body = nil
     if game.html && game.html != ""
-      body = "<p>No Game Yet</p>"
-    else
       body = game.html
+    else
+      body = "<p>No Game Yet</p>"
     end
     response.write body
   else
@@ -292,8 +296,12 @@ patch '/game/:id' do
             html: params[:html],
             public: params[:public] == nil ? nil : (params[:public] == "true" ? true : false)
         }
-        if game.update(info.select { |k, v| !v.nil? })
+        left_info = info.select { |k, v| !v.nil? }
+        if game.update(left_info)
           status 200
+          if left_info[:checksums]
+            $path_resolver.uncache params[:id].to_i
+          end
           json game.public_object
         else
           status 400
@@ -455,7 +463,7 @@ delete '/screenshot/:id' do
 end
 
 $path_resolver = PathResolver.new
-get '/files/:game_id/*.*' do
+get '/game/:game_id/*' do
   maybe_game_id = params[:game_id]
   if maybe_game_id.to_i > 0
     game_id = maybe_game_id.to_i
@@ -463,7 +471,9 @@ get '/files/:game_id/*.*' do
     base_path = CONFIG[:qiniu][:basepath]
     r = $path_resolver.resolve(game_id, url)
     if r
-      redirect base_path + r
+      response.headers["access-control-allow-origin"] = "*"
+      response.headers["access-control-allow-credentials"] = "true"
+      redirect base_path + r, 302
     else
       status 404
     end

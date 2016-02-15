@@ -115,7 +115,7 @@ describe "The Avici.io Backend" do
       expect(g["rating"]).to eq(3)
 
       checksum_data.each do |k, v|
-        get "/files/#{game_id}/#{k}"
+        get "/game/#{game_id}/#{k}"
         follow_redirect!
         expect(last_request.url).to eq(CONFIG[:qiniu][:basepath] + v)
       end
