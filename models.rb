@@ -113,9 +113,9 @@ class Game
   property :category, Integer, :required => true
   property :public, Boolean, :default => lambda {|r, p| false}
 
-  property :checksums, Text, :default => lambda {|r, p| "{}"}
+  property :checksums, Text, :default => lambda {|r, p| "{}"}, :length => 500000
 
-  property :html, Text, :default => lambda {|r, p| ""}
+  property :html, Text, :default => lambda {|r, p| ""}, :length => 500000
 
   def get_file_uptoken
     generate_token

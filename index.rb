@@ -305,6 +305,9 @@ patch '/game/:id' do
           json game.public_object
         else
           status 400
+          game.errors.each do |e|
+            puts e
+          end
         end
       else
         status 403
