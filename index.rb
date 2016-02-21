@@ -114,7 +114,7 @@ post '/user/new' do
     json :id => user.id
   else
     status 400
-    json user.errors.full_messages
+    json :errors => user.errors.full_messages
   end
 end
 
@@ -128,9 +128,11 @@ get '/user/:id' do
       json u.public_object
     else
       status 422
+      json :errors => ["user with id: #{id} not found"]
     end
   else
     status 400
+    json :errors => ["params id :: Int missing"]
   end
 end
 
@@ -156,7 +158,6 @@ patch '/user/:id' do
           info[:password] = nil
         end
         final_params = info.select { |k, v| !v.nil? }
-        p "FINAL PARAMS: #{final_params}"
         if user.update(final_params)
           status 200
         else
@@ -205,6 +206,7 @@ post '/auth/me' do
     end
   else
     status 400
+    json :errors => ["param key :: String missing"]
   end
 end
 
@@ -217,8 +219,12 @@ post '/game/new' do
     if maybe_user
       u = maybe_user
       $log.debug u
-      if (!u) or u.games.length >= u.game_limit
+      if !u
         status 401
+        json :errors => ["user with the api key not found"]
+      elsif u.games.length >= u.game_limit
+        status 401
+        json :errors => ["maximum game reached"]
       else
         title = params[:title]
         tagline = params[:tagline]
@@ -236,6 +242,7 @@ post '/game/new' do
       end
     else
       status 401
+      json :errors => ["user with the key not found"]
     end
   end
 end
@@ -252,6 +259,7 @@ get '/game/:id' do
       json g.public_object
     else
       status 422
+      json :errors => ["game with the id not found"]
     end
   end
 end
@@ -261,9 +269,6 @@ get '/game/:id/index.html' do
   maybe_game = Game.nget(params[:id])
   if maybe_game
     game = maybe_game
-    1.times do
-      p JSON.load(game.checksums)
-    end
     response.headers["Content-Type"] = "text/html;charset=utf-8"
     response.headers["X-Frame-Options"] = "true"
     body = nil
@@ -305,18 +310,19 @@ patch '/game/:id' do
           json game.public_object
         else
           status 400
-          game.errors.each do |e|
-            puts e
-          end
+          json :errors => game.errors.full_messages
         end
       else
         status 403
+        json :errors => ["game's author is not the identified user"]
       end
     else
       status 404
+      json :errors => ["game not found"]
     end
   else
     status 401
+    json :errors => ["game with the api key not found"]
   end
 end
 
@@ -333,12 +339,14 @@ delete '/game/:id' do
         status 200
       else
         status 403
+        json :errors => ["the game's user is not identified as the user with the key"]
       end
     else
       status 404
     end
   else
     status 401
+    json :errors => ["the user with the api key not found"]
   end
 end
 
@@ -374,6 +382,7 @@ post '/comment/new' do
     end
   else
     status 401
+    json :errors => ["user with the api key not found"]
   end
 end
 
@@ -382,6 +391,7 @@ get '/comment/:id' do
   maybe_id = params[:id]
   if maybe_id.to_i == 0
     status 400
+    json :errors => ["id :: Int is malformed"]
   else
     id = maybe_id.to_i
     maybe_c = Comment.get(id)
@@ -482,17 +492,6 @@ get '/game/:game_id/*' do
     end
   else
     status 404
-  end
-end
-
-get '/qiniu/ls' do
-  r = Qiniu.list_prefix 'avicidev', '', nil, 999
-  if r[0] == 200
-    status 200
-    json r[1]["items"].map { |it| it["key"] }
-  else
-    status 500
-    json r[1]
   end
 end
 
