@@ -15,7 +15,6 @@ class PathResolver
     end
     @redis.keys("*").each do |k|
       @redis.set(k, nil)
-      @redis.expire(k, 60 * 10)
     end
   end
 
@@ -45,6 +44,7 @@ class PathResolver
     maybe_game = Game.get(game_id)
     checksum_obj = JSON.parse(maybe_game.checksums)
     @redis.set("game_#{game_id}", "true")
+    @redis.expire("game_#{game_id}", 60 * 10)
     checksum_obj.each do |k, v|
       @redis.set("game_#{game_id}_#{k}", v)
     end
