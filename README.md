@@ -43,6 +43,11 @@ bundle exec rspec
 
 None for now. I will write a basic reference sheet later, after all the api is settled.
 
+### Code Quality & Design
+
+It is mediocre at best, to be honest. I really do not like this piece of code but it is just
+somewhat workable.
+
 ### Contributing
 
 This project is still in early alpha. While I do appreciate

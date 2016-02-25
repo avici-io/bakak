@@ -29,8 +29,6 @@ configure do
   enable :cross_origin
 end
 
-Qiniu.establish_connection! access_key: CONFIG[:qiniu][:ak], secret_key: CONFIG[:qiniu][:sk]
-
 $log = Logger.new(STDOUT)
 
 get "/" do
@@ -63,7 +61,6 @@ post '/user' do
 end
 
 post '/user/new' do
-  $log.debug params
   param :username, String, required: true
   param :password, String, required: true
   param :email, String, required: true
@@ -242,7 +239,6 @@ get '/game/:id' do
 end
 
 get '/game/:id/index.html' do
-
   maybe_game = Game.nget(params[:id])
   if maybe_game
     game = maybe_game
