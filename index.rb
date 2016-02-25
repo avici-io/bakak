@@ -1,13 +1,19 @@
-require_relative "config"
+require_relative 'config'
 
-require "logger"
-require "thin"
-require "sinatra"
-require "sinatra/reloader" if development?
-require "sinatra/json"
-require "data_mapper"
-require_relative "qiniu_patch"
+require 'logger'
+require 'thin'
+require 'sinatra'
+require 'sinatra/param'
+require 'sinatra/reloader' if development?
+require 'sinatra/json'
+require 'data_mapper'
+require_relative 'qiniu_patch'
 require_relative 'mailer'
+require_relative "path_resolver"
+require_relative "qiniu_patch"
+require_relative "models"
+
+require "pry"
 
 require 'sinatra/cross_origin'
 
@@ -25,39 +31,17 @@ end
 
 Qiniu.establish_connection! access_key: CONFIG[:qiniu][:ak], secret_key: CONFIG[:qiniu][:sk]
 
-require_relative "path_resolver"
-require_relative "qiniu_patch"
-
-require "pry"
-
-
-require_relative "models"
-
 $log = Logger.new(STDOUT)
 
 get "/" do
   status 200
+  json :message => "Avici Server Running"
 end
 
-=begin
-@api {post} /auth
-@apiName Authenticate
-@apiGroup Authentication
-
-@apiParam {String} username Username of the User
-@apiParam {String} password Password of the User
-
-@apiSuccess {String} key Public Key of the User
-
-@apiSuccessExample Success-Response:
-  HTTP/1.1 200 OK
-  {
-    "key": "<user_key>"
-  }
-
-=end
-
 post '/auth' do
+  param :username, String, required: true
+  param :password, String, required: true
+
   username = params[:username]
   password = params[:password]
   u = User.first(:username => username)
@@ -78,26 +62,12 @@ post '/user' do
 
 end
 
-
-=begin
-@api {post} /user/new Create New User
-@apiName NewUser
-@apiGroup User
-
-@apiParam {String} username Username
-@apiParam {String} password Password
-@apiParam {String} email Email
-
-@apiSuccessExample Success-Response:
-  HTTP:/1.1 201 Created
-  {
-    "id": 2
-  }
-=end
-
-# Create a New User
 post '/user/new' do
   $log.debug params
+  param :username, String, required: true
+  param :password, String, required: true
+  param :email, String, required: true
+
   username = params[:username]
   password = params[:password]
   email = params[:email]
@@ -120,6 +90,8 @@ end
 
 # Get User Info
 get '/user/:id' do
+  param :id, Integer, required: true
+
   r = params['id'].to_i
   if r
     u = User.get(r)
@@ -138,6 +110,11 @@ end
 
 # Modify User
 patch '/user/:id' do
+  param :id, Integer, required: true
+  param :key, String, required: true
+  param :email, String
+  param :description, String
+
   maybe_user = User.nget(params[:id])
   current_user = User.from_apikey(params[:key])
   if maybe_user

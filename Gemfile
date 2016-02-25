@@ -11,6 +11,7 @@ gem 'rspec-mocks'
 gem 'rspec'
 gem 'rantly'
 gem 'sinatra', '~>1.4.7'
+gem "sinatra-param", require: "sinatra/param"
 gem 'redis'
 gem 'pry'
 gem 'pg'
