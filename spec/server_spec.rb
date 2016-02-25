@@ -121,12 +121,4 @@ describe "The Avici.io Backend" do
       end
     }
   end
-
-  it "should be able to list files" do
-    get '/qiniu/ls'
-    expect(last_response.status).to be(200)
-    obj = JSON.parse(last_response.body)
-    expect(obj).to be_an_instance_of(Array)
-    expect(obj[0]).to be_an_instance_of(String)
-  end
 end

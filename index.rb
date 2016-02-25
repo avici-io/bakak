@@ -168,10 +168,7 @@ end
 
 post '/auth/me' do
   if !params[:key].nil?
-    $log.debug params[:key]
     maybe_user = User.from_apikey(params[:key])
-    $log.debug "Maybe User"
-    $log.debug maybe_user
     if maybe_user
       status 200
       json maybe_user.public_object.merge({:key => maybe_user.generate_apikey(3600)})
@@ -467,5 +464,3 @@ get '/game/:game_id/*' do
     status 404
   end
 end
-
-

@@ -15,6 +15,7 @@ class PathResolver
     end
     @redis.keys("*").each do |k|
       @redis.set(k, nil)
+      @redis.expire(k, 60 * 10)
     end
   end
 
